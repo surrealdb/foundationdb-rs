@@ -32,12 +32,31 @@ const INCLUDE_PATH: &str = "-I./include/700";
 const INCLUDE_PATH: &str = "-I./include/710";
 
 fn main() {
-    // Link against fdb_c.
-    println!("cargo:rustc-link-lib=fdb_c");
+    println!("cargo:rerun-if-env-changed=FDB_CLIENT_LIB_PATHS");
+    println!("cargo:rerun-if-env-changed=FDB_CLIENT_STATIC");
 
-    if let Ok(lib_path) = env::var("FDB_CLIENT_LIB_PATH") {
-        println!("cargo:rustc-link-search=native={}", lib_path);
+
+    if let Ok(lib_path) = env::var("FDB_CLIENT_LIB_PATHS") {
+        lib_path.split(":").for_each(|path| {
+            println!("cargo:rustc-link-search=native={}", path);
+        });
     }
+
+    // Link against fdb_c
+    if env::var_os(format!("FDB_CLIENT_STATIC")).is_some() {
+        println!("cargo:rustc-link-lib=static=crypto");
+        println!("cargo:rustc-link-lib=static=ssl");
+        println!("cargo:rustc-link-lib=static=eio");
+        println!("cargo:rustc-link-lib=static=fdb_c");
+        println!("cargo:rustc-link-lib=static=fdbclient");
+        println!("cargo:rustc-link-lib=static=fdbrpc");
+        println!("cargo:rustc-link-lib=static=flow");
+        println!("cargo:rustc-link-lib=static=fmt");
+        println!("cargo:rustc-link-lib=static=stacktrace");
+    } else {
+        println!("cargo:rustc-link-lib=dylib=fdb_c");
+    }
+
 
     // Include the link directory for the .lib file on windows (which will resolve to
     // the shared library, at runtime)
